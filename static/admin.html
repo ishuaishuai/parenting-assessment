@@ -116,11 +116,14 @@
     }
     function _showErr() { document.getElementById('login-error').style.display = 'block'; }
     function _hideErr() { document.getElementById('login-error').style.display = 'none'; }
+    let _refreshTimer = null;
     function login() {
       _pw = document.getElementById('admin-pw').value.trim();
       if (!_pw) return;
       _hideErr();
       loadDashboard();
+      if (_refreshTimer) clearInterval(_refreshTimer);
+      _refreshTimer = setInterval(loadDashboard, 30000);
     }
     async function loadDashboard() {
       const stats = await _fetch('stats');
