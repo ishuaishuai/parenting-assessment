@@ -70,8 +70,18 @@ document.querySelectorAll('.age-card').forEach(card => {
     state.answers = new Array(40).fill(null);
     state.current_index = 0;
 
+    document.getElementById('age-selection').style.display = 'none';
+    document.getElementById('question-loading').style.display = 'block';
+
     const res = await fetch(`/api/questions/${band}`);
-    if (!res.ok) { alert('加载题目失败，请刷新重试'); return; }
+
+    document.getElementById('question-loading').style.display = 'none';
+
+    if (!res.ok) {
+      document.getElementById('age-selection').style.display = 'block';
+      alert('加载题目失败，请刷新重试');
+      return;
+    }
     const data = await res.json();
     state.questions = data.questions;
     saveState();
