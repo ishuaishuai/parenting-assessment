@@ -180,6 +180,7 @@ async function submitQuiz() {
   const report = await res.json();
   localStorage.setItem('pa_current_report', JSON.stringify(report));
   localStorage.removeItem(LS_KEY);
+  trackEvent('quiz_complete', state.age_band);
   window.location.href = '/report';
 }
 

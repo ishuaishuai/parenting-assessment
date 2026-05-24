@@ -47,11 +47,28 @@ async def init_db():
 
 
 async def track_event(event_type: str, age_band: str = None, session_id: str = None, ip: str = None, ua: str = None):
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
     async with aiosqlite.connect(settings.DATABASE_PATH) as db:
         await db.execute(
             "INSERT INTO events (event_type, age_band, session_id, ip, ua) VALUES (?, ?, ?, ?, ?)",
             (event_type, age_band, session_id, ip, ua)
         )
+        # Update daily_stats
+        col_map = {
+            'page_view': 'pv',
+            'quiz_start': 'quiz_start',
+            'quiz_complete': 'quiz_complete',
+            'report_generated': 'report_gen',
+            'ai_diagnosis': 'ai_diag',
+            'pdf_download': 'pdf_down',
+        }
+        col = col_map.get(event_type)
+        if col:
+            await db.execute(
+                f"INSERT INTO daily_stats (date, {col}) VALUES (?, 1) ON CONFLICT(date) DO UPDATE SET {col} = {col} + 1",
+                (today,)
+            )
         await db.commit()
 
 

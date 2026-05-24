@@ -117,5 +117,8 @@
   <footer class="footer">
     <p>本评估仅供教育参考，不作为医学诊断依据 · 基于发展心理学与家庭系统理论</p>
   </footer>
+<script>
+  fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event_type: 'page_view' }) }).catch(() => {});
+</script>
 </body>
 </html>
