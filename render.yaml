@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: parenting-assessment
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8000
+      - key: MODEL_PROVIDER
+        value: kimi
+      - key: MODEL_NAME
+        value: moonshot-v1-8k
+      - key: ENABLE_AI_DIAGNOSIS
+        value: "true"
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: MODEL_API_KEY
+        sync: false

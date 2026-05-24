@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台</title>
+  <link rel="stylesheet" href="/css/style.css?v=2">
+  <style>
+    body { background: var(--c-bg); }
+    .admin-header { background: var(--c-ink); color: #fff; padding: 20px; text-align: center; }
+    .admin-header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .kpi-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 4px; padding: 16px; text-align: center; }
+    .kpi-card .kpi-value { font-size: 1.4rem; font-weight: 700; color: var(--c-gold); }
+    .kpi-card .kpi-label { font-size: 0.65rem; color: var(--c-ink-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .chart-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 4px; padding: 16px; margin-bottom: 16px; }
+    .chart-card h3 { font-size: 0.8rem; font-weight: 700; color: var(--c-ink); margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; }
+    .chart-card h3::after { content: ''; display: block; width: 24px; height: 2px; background: var(--c-gold); margin-top: 8px; }
+    .chart-box { width: 100%; height: 240px; }
+    .risk-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .risk-table th, .risk-table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--c-border-light); }
+    .risk-table th { color: var(--c-ink-muted); font-weight: 600; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; }
+    .risk-table td { color: var(--c-ink-light); }
+    .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .risk-badge.high { background: var(--c-red-bg); color: var(--c-red); }
+    .risk-badge.medium { background: var(--c-amber-bg); color: var(--c-amber); }
+    .risk-badge.low { background: var(--c-green-bg); color: var(--c-green); }
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-header">
+    <h1>管理后台</h1>
+    <p style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-top:4px;">评估数据统计中心</p>
+  </div>
+
+  <div class="container">
+    <div id="login-section">
+      <div style="text-align:center;padding:40px 0;">
+        <p style="color:var(--c-ink-muted);font-size:0.9rem;margin-bottom:20px;">请输入管理员密码</p>
+        <input type="password" id="admin-pw" placeholder="密码" style="width:100%;padding:12px;border:1.5px solid var(--c-border);border-radius:4px;font-size:0.9rem;margin-bottom:12px;">
+        <button class="btn-primary" onclick="login()" style="width:100%;">登录</button>
+        <p id="login-error" style="color:var(--c-red);font-size:0.8rem;margin-top:8px;display:none;">密码错误</p>
+      </div>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-total">0</div>
+          <div class="kpi-label">总评估数</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-today">0</div>
+          <div class="kpi-label">今日评估</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-today-complete">0</div>
+          <div class="kpi-label">今日完成</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-pv">0</div>
+          <div class="kpi-label">总访问量</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-today-pv">0</div>
+          <div class="kpi-label">今日访问</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-avg">0</div>
+          <div class="kpi-label">平均得分</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>访问与评估趋势（近30天）</h3>
+        <div class="chart-box" id="trend-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>风险分布</h3>
+        <div class="chart-box" id="risk-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>最新评估记录</h3>
+        <table class="risk-table">
+          <thead>
+            <tr><th>时间</th><th>年龄</th><th>得分</th><th>风险</th></tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script>
+    const API_BASE = '/api/admin';
+    let _pw = '';
+    async function _fetch(endpoint) {
+      const res = await fetch(`${API_BASE}/${endpoint}?password=${encodeURIComponent(_pw)}`);
+      if (!res.ok) { if (res.status === 401) _showErr(); return null; }
+      return res.json();
+    }
+    function _showErr() { document.getElementById('login-error').style.display = 'block'; }
+    function _hideErr() { document.getElementById('login-error').style.display = 'none'; }
+    function login() {
+      _pw = document.getElementById('admin-pw').value.trim();
+      if (!_pw) return;
+      _hideErr();
+      loadDashboard();
+    }
+    async function loadDashboard() {
+      const stats = await _fetch('stats');
+      if (!stats) return;
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('kpi-total').textContent = stats.total_reports || 0;
+      document.getElementById('kpi-today').textContent = stats.today_reports || 0;
+      document.getElementById('kpi-today-complete').textContent = stats.today_complete || 0;
+      document.getElementById('kpi-pv').textContent = stats.total_pv || 0;
+      document.getElementById('kpi-today-pv').textContent = stats.today_pv || 0;
+      document.getElementById('kpi-avg').textContent = stats.avg_score || 0;
+
+      const funnel = await _fetch('funnel');
+      if (funnel && funnel.funnel && funnel.funnel.length) {
+        const dates = funnel.funnel.map(r => r.date).reverse();
+        const pvData = funnel.funnel.map(r => r.pv || 0).reverse();
+        const completeData = funnel.funnel.map(r => r.quiz_complete || 0).reverse();
+        echarts.init(document.getElementById('trend-chart')).setOption({
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['访问量', '评估完成'], bottom: 0, textStyle: { fontSize: 11, color: '#6b7d8f' } },
+          grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+          xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, color: '#6b7d8f' }, axisLine: { lineStyle: { color: '#e5e2dc' } } },
+          yAxis: [
+            { type: 'value', name: '访问量', position: 'left', axisLabel: { fontSize: 10, color: '#6b7d8f' }, axisLine: { lineStyle: { color: '#e5e2dc' } }, splitLine: { lineStyle: { color: '#f0eeea' } } },
+            { type: 'value', name: '完成数', position: 'right', axisLabel: { fontSize: 10, color: '#6b7d8f' }, axisLine: { lineStyle: { color: '#e5e2dc' } }, splitLine: { show: false } }
+          ],
+          series: [
+            { name: '访问量', type: 'line', data: pvData, smooth: true, yAxisIndex: 0, lineStyle: { color: '#6b7d8f', width: 2 }, itemStyle: { color: '#6b7d8f' }, areaStyle: { color: 'rgba(107,125,143,0.08)' } },
+            { name: '评估完成', type: 'line', data: completeData, smooth: true, yAxisIndex: 1, lineStyle: { color: '#b07d4a', width: 2 }, itemStyle: { color: '#b07d4a' }, areaStyle: { color: 'rgba(176,125,74,0.1)' } }
+          ]
+        });
+      }
+
+      const highRisk = await _fetch('high-risk');
+      if (highRisk && highRisk.high_risk) {
+        const ageDist = {};
+        highRisk.high_risk.forEach(r => { ageDist[r.age_band] = (ageDist[r.age_band] || 0) + 1; });
+        echarts.init(document.getElementById('risk-chart')).setOption({
+          tooltip: { trigger: 'item' },
+          series: [{ type: 'pie', radius: ['40%', '70%'], data: Object.entries(ageDist).map(([k, v]) => ({ name: k + '岁', value: v })), label: { fontSize: 11, color: '#6b7d8f' }, itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 } }]
+        });
+        document.getElementById('records-body').innerHTML = highRisk.high_risk.slice(0, 20).map(r => `
+          <tr><td>${r.created_at || ''}</td><td>${r.age_band || ''}</td>
+          <td style="color:${r.overall_score < 40 ? '#9c3b3b' : '#b07d4a'};font-weight:600;">${Math.round(r.overall_score || 0)}</td>
+          <td><span class="risk-badge ${r.overall_score < 40 ? 'high' : 'medium'}">${r.flag_count || 0}</span></td></tr>
+        `).join('');
+      }
+    }
+    const _urlPw = new URLSearchParams(window.location.search).get('password');
+    if (_urlPw) { _pw = _urlPw; document.getElementById('admin-pw').value = _urlPw; login(); }
+  </script>
+</body>
+</html>

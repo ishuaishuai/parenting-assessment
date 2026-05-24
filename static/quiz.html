@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>答题 - 亲子教育评估</title>
+<link rel="stylesheet" href="/css/style.css?v=2">
+</head>
+<body>
+<div class="container">
+  <div id="age-selection">
+    <div style="padding: 40px 0; text-align: center;">
+      <h2 style="font-size: 20px; margin-bottom: 8px; font-weight: 700; color: var(--c-ink);">选择孩子年龄段</h2>
+      <p style="color: var(--c-ink-muted); font-size: 14px;">基于发展心理学分波段设计，各年龄段评估重点不同</p>
+    </div>
+    <div class="age-grid">
+      <div class="age-card" data-band="3-4">
+        <div class="age-icon">I</div>
+        <div class="age-label">3-4 岁</div>
+        <div class="age-range">幼儿园前</div>
+      </div>
+      <div class="age-card" data-band="5-6">
+        <div class="age-icon">II</div>
+        <div class="age-label">5-6 岁</div>
+        <div class="age-range">幼儿园</div>
+      </div>
+      <div class="age-card" data-band="7-8">
+        <div class="age-icon">III</div>
+        <div class="age-label">7-8 岁</div>
+        <div class="age-range">小学低年级</div>
+      </div>
+      <div class="age-card" data-band="9-10">
+        <div class="age-icon">IV</div>
+        <div class="age-label">9-10 岁</div>
+        <div class="age-range">小学中年级</div>
+      </div>
+      <div class="age-card" data-band="11-12" style="grid-column: 1 / -1;">
+        <div class="age-icon">V</div>
+        <div class="age-label">11-12 岁</div>
+        <div class="age-range">小学高年级</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-container" style="display:none;">
+    <div class="quiz-header">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span id="dim-tag" class="dim-tag">维度</span>
+        <span id="progress-text" style="font-size:13px;color:rgba(255,255,255,0.6);">1 / 40</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 2.5%"></div>
+      </div>
+    </div>
+
+    <div class="question-card">
+      <div class="question-text" id="question-text">加载中...</div>
+      <div class="option-list" id="option-list"></div>
+    </div>
+
+    <div class="quiz-nav">
+      <button class="btn-prev" id="btn-prev" onclick="prevQuestion()">上一题</button>
+      <button class="btn-next" id="btn-next" onclick="nextQuestion()">下一题</button>
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <button onclick="localStorage.removeItem('pa_quiz_state');localStorage.removeItem('pa_current_report');window.location.reload();" style="background:none;border:none;color:var(--c-ink-muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;">重新开始</button>
+    </div>
+  </div>
+
+  <div id="loading" style="display:none;text-align:center;padding:80px 0;">
+    <div style="font-size:0.75rem;color:var(--c-ink-muted);text-transform:uppercase;letter-spacing:3px;margin-bottom:24px;">分析中</div>
+    <div style="width:40px;height:2px;background:var(--c-border);margin:0 auto;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;height:100%;width:60%;background:var(--c-gold);animation:slide 1.2s ease-in-out infinite;"></div>
+    </div>
+    <div style="font-size:0.8rem;color:var(--c-ink-muted);margin-top:20px;">正在分析 5 个维度，报告即将生成</div>
+  </div>
+</div>
+
+<style>
+@keyframes slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+</style>
+
+<script src="/js/quiz.js?v=2"></script>
+</body>
+</html>

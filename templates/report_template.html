@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>亲子教育评估报告</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    padding-bottom: 40px;
+    color: #1a1a2e;
+}
+.container { max-width: 420px; margin: 0 auto; padding: 0 16px; }
+
+/* ===== 顶部 Hero ===== */
+.hero {
+    background: linear-gradient(145deg, #4a90d9 0%, #7b68ee 100%);
+    border-radius: 0 0 28px 28px;
+    padding: 32px 24px 40px;
+    margin: 0 -16px 16px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -40px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+.hero-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }
+.hero .date { font-size: 12px; opacity: 0.75; }
+.hero-affirmation {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 20px;
+}
+.hero-affirmation .emoji { font-size: 36px; margin-bottom: 8px; display: block; }
+.hero-affirmation .text { font-size: 15px; line-height: 1.7; }
+.hero-affirmation .text strong { font-weight: 600; }
+
+/* ===== 卡片基础 ===== */
+.card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.card-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.card-title { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+.card-subtitle { font-size: 13px; color: #8b95a5; margin-top: 2px; }
+
+/* ===== 综合评分环 ===== */
+.score-ring-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 8px 0;
+}
+.score-ring {
+    position: relative;
+    width: 120px; height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.score-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.score-ring .ring-bg { fill: none; stroke: #e8ecf4; stroke-width: 8; }
+.score-ring .ring-fill { fill: none; stroke: url(#ringGradient); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
+.score-ring .center-text {
+    position: relative;
+    text-align: center;
+}
+.score-ring .center-text .num {
+    font-size: 32px;
+    font-weight: 800;
+    color: #4a90d9;
+    line-height: 1;
+}
+.score-ring .center-text .label {
+    font-size: 12px;
+    color: #8b95a5;
+    margin-top: 4px;
+}
+.score-summary {
+    flex: 1;
+}
+.score-summary .item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #555;
+}
+.score-summary .item .pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+.pill-green { background: #e8f5e9; color: #2e7d32; }
+.pill-orange { background: #fff3e0; color: #e65100; }
+.pill-red { background: #ffebee; color: #c62828; }
+
+/* ===== 雷达图 ===== */
+#radar-chart { width: 100%; height: 280px; }
+.radar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 12px;
+    color: #8b95a5;
+    margin-top: 4px;
+}
+.radar-legend span { display: flex; align-items: center; gap: 4px; }
+.radar-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ===== 维度明细 ===== */
+.dim-list { display: flex; flex-direction: column; gap: 14px; }
+.dim-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.dim-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.dim-info { flex: 1; }
+.dim-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+.dim-name .percentile { font-size: 13px; color: #4a90d9; font-weight: 700; }
+.dim-bar-wrap {
+    height: 8px;
+    background: #eceff1;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+.dim-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+.dim-bar::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 20px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+}
+.dim-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #8b95a5;
+}
+
+/* ===== 红旗信号 ===== */
+.flag-card {
+    background: linear-gradient(135deg, #fff8e1 0%, #fff 70%);
+    border: 1px solid #ffe082;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.flag-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.flag-card-header .icon { font-size: 20px; }
+.flag-card-header .text { font-size: 16px; font-weight: 700; color: #5d4037; }
+.flag-card-header .count {
+    margin-left: auto;
+    background: #ffa000;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+.flag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.flag-item:last-child { margin-bottom: 0; }
+.flag-item .flag-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.flag-item .flag-body { flex: 1; }
+.flag-item .flag-text { font-size: 14px; color: #333; line-height: 1.5; }
+.flag-item .flag-meta { font-size: 12px; color: #8b95a5; margin-top: 4px; }
+.flag-cta {
+    margin-top: 16px;
+    padding: 14px;
+    background: linear-gradient(135deg, #ffebee 0%, #fff 100%);
+    border: 1px dashed #e53935;
+    border-radius: 14px;
+    text-align: center;
+}
+.flag-cta .cta-text { font-size: 14px; color: #c62828; font-weight: 600; margin-bottom: 10px; }
+.flag-cta .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+    color: #fff;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(229,57,53,0.3);
+}
+
+/* ===== 行动阶梯 ===== */
+.action-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.tier { margin-bottom: 20px; }
+.tier:last-child { margin-bottom: 0; }
+.tier-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.tier-badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+.badge-today { background: #e8f5e9; color: #2e7d32; }
+.badge-week { background: #e3f2fd; color: #1565c0; }
+.badge-month { background: #f3e5f5; color: #6a1b9a; }
+.tier-title { font-size: 15px; font-weight: 600; color: #333; }
+.tier-sub { font-size: 12px; color: #8b95a5; margin-left: auto; }
+
+/* ===== 建议列表（无勾选） ===== */
+.advice-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #fafbfc;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+.advice-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #667eea;
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+.advice-text { font-size: 14px; color: #444; line-height: 1.6; flex: 1; }
+
+/* ===== 维度深度分析 ===== */
+.detail-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+}
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.detail-icon { font-size: 22px; }
+.detail-name { font-size: 16px; font-weight: 700; color: #1a1a2e; flex: 1; }
+.detail-score { font-size: 14px; font-weight: 700; }
+.detail-section { margin-bottom: 14px; }
+.detail-section:last-child { margin-bottom: 0; }
+.section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.detail-section p {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.7;
+}
+.detail-section ul {
+    list-style: none;
+    padding: 0;
+}
+.detail-section ul li {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+}
+.detail-section ul li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #667eea;
+    font-weight: 700;
+}
+.script-box {
+    background: #f8f9ff;
+    border-left: 3px solid #667eea;
+    padding: 12px 16px;
+    border-radius: 0 12px 12px 0;
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+/* ===== 整体摘要 ===== */
+.summary-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+    border: 1px solid #e8eaff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.summary-card .summary-text {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.8;
+}
+.summary-card .cross-analysis {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e0e0e0;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.6;
+}
+
+/* ===== 环境建议 ===== */
+.env-card {
+    background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%);
+    border: 1px solid #c8e6c9;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.env-card .env-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.env-card .env-text {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.7;
+}
+
+/* ===== 资源推荐 ===== */
+.resource-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.res-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: #fafbfc;
+    border-radius: 14px;
+    margin-bottom: 10px;
+}
+.res-item:last-child { margin-bottom: 0; }
+.res-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.res-body { flex: 1; }
+.res-body .title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 2px; }
+.res-body .subtitle { font-size: 12px; color: #8b95a5; }
+.res-arrow { font-size: 20px; color: #ccc; }
+
+.footer {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+    padding: 20px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ===== 顶部 Hero ===== -->
+    <div class="hero">
+        <div class="hero-tag">{{BAND_LABEL}} · {{DATE}}</div>
+        <h1>亲子教育评估报告</h1>
+        <div class="date">基于40题标准化问卷的深度分析</div>
+        <div class="hero-affirmation">
+            <span class="emoji">💙</span>
+            <div class="text">
+                <strong>{{AFFIRMATION_HIGHLIGHT}}</strong><br>
+                {{AFFIRMATION_BODY}}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 综合评分 ===== -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#e3f2fd;">📊</div>
+            <div>
+                <div class="card-title">综合健康指数</div>
+                <div class="card-subtitle">五维度综合评估得分</div>
+            </div>
+        </div>
+        <div class="score-ring-wrap">
+            <div class="score-ring">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                    <defs>
+                        <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4a90d9"/>
+                            <stop offset="100%" style="stop-color:#7b68ee"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                    <circle id="ringFill" class="ring-fill" cx="60" cy="60" r="50"
+                        stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+                </svg>
+                <div class="center-text">
+                    <div class="num" id="ringNum">0</div>
+                    <div class="label">综合分</div>
+                </div>
+            </div>
+            <div class="score-summary">
+                {{SCORE_SUMMARY}}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 整体摘要 ===== -->
+    <div class="summary-card">
+        <div class="summary-text">{{SUMMARY}}</div>
+        <div class="cross-analysis">{{CROSS_ANALYSIS}}</div>
+    </div>
+
+    <!-- ===== 五维度雷达图 ===== -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#e8f5e9;">📈</div>
+            <div>
+                <div class="card-title">五维度能力画像</div>
+                <div class="card-subtitle">圆圈 = 同龄孩子平均水平（50%）</div>
+            </div>
+        </div>
+        <div id="radar-chart"></div>
+        <div class="radar-legend">
+            <span><span class="dot" style="background:#667eea;"></span> 当前评估</span>
+            <span><span class="dot" style="background:rgba(0,0,0,0.15);border:1px dashed #999;"></span> 同龄平均</span>
+        </div>
+    </div>
+
+    <!-- ===== 维度明细 ===== -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#f3e5f5;">🔍</div>
+            <div>
+                <div class="card-title">维度明细</div>
+                <div class="card-subtitle">从外到内：环境 → 关系 → 个体</div>
+            </div>
+        </div>
+        <div class="dim-list">
+            {{DIM_LIST}}
+        </div>
+    </div>
+
+    <!-- ===== 维度深度分析 ===== -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#e3f2fd;">🔬</div>
+            <div>
+                <div class="card-title">维度深度分析</div>
+                <div class="card-subtitle">优势、关注点与个性化建议</div>
+            </div>
+        </div>
+        <div class="detail-list">
+            {{DIM_DETAIL}}
+        </div>
+    </div>
+
+    <!-- ===== 红旗信号 + 诊断入口 ===== -->
+    <div class="flag-card" id="flag-card">
+        <div class="flag-card-header">
+            <span class="icon">⚠️</span>
+            <span class="text">{{FLAG_TITLE}}</span>
+            <span class="count" id="flag-count">{{FLAG_COUNT}}</span>
+        </div>
+        {{FLAG_LIST}}
+        <div class="risk-analysis" style="margin-top:12px;padding:12px;background:#fff;border-radius:12px;font-size:13px;color:#555;line-height:1.6;">
+            {{RISK_ANALYSIS}}
+        </div>
+        {{FLAG_CTA}}
+    </div>
+
+    <!-- ===== 环境建议 ===== -->
+    <div class="env-card">
+        <div class="env-title">🏠 环境调整建议</div>
+        <div class="env-text">{{ENVIRONMENT}}</div>
+    </div>
+
+    <!-- ===== 三级行动阶梯 ===== -->
+    <div class="action-card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#fff8e1;">🎯</div>
+            <div>
+                <div class="card-title">您的行动阶梯</div>
+                <div class="card-subtitle">基于评估结果的针对性建议</div>
+            </div>
+        </div>
+
+        <div class="tier">
+            <div class="tier-header">
+                <span class="tier-badge badge-today">今天</span>
+                <span class="tier-title">即刻可做</span>
+                <span class="tier-sub">5分钟启动</span>
+            </div>
+            {{TODAY_ACTIONS}}
+        </div>
+
+        <div class="tier">
+            <div class="tier-header">
+                <span class="tier-badge badge-week">本周</span>
+                <span class="tier-title">短期聚焦</span>
+                <span class="tier-sub">建立微习惯</span>
+            </div>
+            {{WEEK_ACTIONS}}
+        </div>
+
+        <div class="tier">
+            <div class="tier-header">
+                <span class="tier-badge badge-month">本月</span>
+                <span class="tier-title">中期目标</span>
+                <span class="tier-sub">系统改善</span>
+            </div>
+            {{MONTH_ACTIONS}}
+        </div>
+    </div>
+
+    <!-- ===== 资源推荐 ===== -->
+    <div class="resource-card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#fce4ec;">📚</div>
+            <div>
+                <div class="card-title">推荐阅读与工具</div>
+                <div class="card-subtitle">根据您的评估结果智能匹配</div>
+            </div>
+        </div>
+        {{RESOURCE_LIST}}
+    </div>
+
+    <div class="footer">
+        本评估仅供参考，不能替代专业医疗诊断
+    </div>
+</div>
+
+<script>
+// ===== 报告数据 =====
+const reportData = {
+    overall: {{OVERALL_SCORE}},
+    scores: {{RADAR_DATA}},
+    flags: {{FLAGS_JS_ARRAY}},
+    actions: {
+        today: {{TODAY_JS_ARRAY}},
+        week: {{WEEK_JS_ARRAY}},
+        month: {{MONTH_JS_ARRAY}}
+    },
+    resources: {{RESOURCES_JS_ARRAY}}
+};
+
+// ===== 综合评分圆环动画 =====
+function animateRing(targetValue) {
+    const circumference = 314.16;
+    const ringFill = document.getElementById('ringFill');
+    const ringNum = document.getElementById('ringNum');
+    const offset = circumference - (targetValue / 100) * circumference;
+    ringFill.style.strokeDashoffset = offset;
+    let current = 0;
+    const duration = 1500;
+    const startTime = performance.now();
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        current = Math.round(eased * targetValue);
+        ringNum.textContent = current;
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+setTimeout(() => animateRing(reportData.overall), 300);
+
+// ===== 雷达图 =====
+const chartDom = document.getElementById('radar-chart');
+const myChart = echarts.init(chartDom);
+const radarOption = {
+    radar: {
+        indicator: [
+            { name: '儿童发展', max: 100 },
+            { name: '亲子关系', max: 100 },
+            { name: '家庭环境', max: 100 },
+            { name: '父母状态', max: 100 },
+            { name: '风险筛查', max: 100 }
+        ],
+        shape: 'polygon',
+        splitNumber: 4,
+        axisName: { color: '#555', fontSize: 11, fontWeight: 500 },
+        splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } },
+        splitArea: { areaStyle: { color: ['#fff', '#f8f9fa', '#fff', '#f8f9fa'] } },
+        axisLine: { lineStyle: { color: 'rgba(0,0,0,0.08)' } }
+    },
+    series: [
+        {
+            type: 'radar', z: 1, silent: true,
+            data: [{
+                value: [50, 50, 50, 50, 50],
+                name: '同龄平均',
+                lineStyle: { color: 'rgba(0,0,0,0.12)', width: 1, type: 'dashed' },
+                itemStyle: { opacity: 0 },
+                areaStyle: { opacity: 0 }
+            }]
+        },
+        {
+            type: 'radar', z: 2,
+            data: [{
+                value: [{{RADAR_VALUES}}],
+                name: '当前评估',
+                areaStyle: { color: 'rgba(74, 144, 217, 0.15)' },
+                lineStyle: { color: '#4a90d9', width: 2.5 },
+                itemStyle: { color: '#4a90d9', borderWidth: 2, borderColor: '#fff' },
+                label: { show: true, formatter: p => p.value + '%', color: '#4a90d9', fontSize: 11, fontWeight: 'bold' }
+            }],
+            animationDuration: 1800,
+            animationEasing: 'cubicOut'
+        }
+    ],
+    legend: {
+        data: ['同龄平均', '当前评估'],
+        bottom: -4,
+        textStyle: { fontSize: 11, color: '#8b95a5' },
+        itemWidth: 10, itemHeight: 10
+    }
+};
+myChart.setOption(radarOption);
+window.addEventListener('resize', () => myChart.resize());
+
+// ===== 进度条动画 =====
+setTimeout(() => {
+    document.querySelectorAll('.dim-bar').forEach(bar => {
+        const target = bar.getAttribute('data-target');
+        setTimeout(() => bar.style.width = target + '%', 100);
+    });
+}, 400);
+
+// 行动建议已改为直接展示，无需勾选交互
+</script>
+
+</body>
+</html>
