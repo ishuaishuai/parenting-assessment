@@ -453,16 +453,19 @@ def generate_report(age_band, questions, answers):
     cross_analysis = DIM_CROSS_TIPS.get(lowest_dim, "")
 
     # === 4. 风险分析 ===
+    risk_score = scores.get("RISK", 50)
     risk_analysis = {
         "risk_count": len(flags),
         "critical_count": sum(1 for f in flags if f.get("critical")),
-        "has_risk": len(flags) > 0,
+        "has_risk": len(flags) > 0 or risk_score < 60,
         "analysis": "",
     }
     if risk_analysis["critical_count"] > 0:
         risk_analysis["analysis"] = f"发现{risk_analysis['critical_count']}个严重风险信号，建议立即寻求专业帮助。"
     elif risk_analysis["risk_count"] > 0:
         risk_analysis["analysis"] = f"发现{risk_analysis['risk_count']}个需要关注的信号，建议提高警惕并及时跟进。"
+    elif risk_score < 60:
+        risk_analysis["analysis"] = f"风险筛查维度得分 {risk_score} 分，虽未触发具体红旗信号，但整体风险水平需关注。建议持续观察并适时寻求专业评估。"
     else:
         risk_analysis["analysis"] = "未发现明显风险信号，孩子目前处于健康的发展轨道上。"
 

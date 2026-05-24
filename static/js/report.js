@@ -122,6 +122,7 @@ function buildReportHTML(r) {
     RISK: { concern: '该信号提示存在内化或外化问题的风险迹象，需持续观察并评估严重程度。', action: '参考 CBCL/SDQ 筛查框架，记录该行为的发生频率、持续时长与功能损害程度。如持续 2 周以上或影响日常生活，建议寻求儿童心理科专业评估。' },
   };
 
+  const riskScore = scores.RISK || 50;
   const flagHtml = flags.length
     ? flags.map(f => {
         const advice = riskAdviceMap[f.dim] || riskAdviceMap['DEV'];
@@ -141,6 +142,8 @@ function buildReportHTML(r) {
       </div>
     `;
       }).join('')
+    : riskScore < 60
+    ? '<div style="text-align:center;padding:24px;font-size:0.85rem;color:var(--c-ink-muted);">未触发具体红旗信号，但风险维度整体得分偏低，建议参考上方维度解读中的关注要点与发展建议。</div>'
     : '<div style="text-align:center;padding:24px;font-size:0.85rem;color:var(--c-green);">未发现明显风险信号，继续保持。</div>';
 
   // Actions with CONNECT model reference
