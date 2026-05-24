@@ -228,16 +228,25 @@ function buildReportHTML(r) {
         ${resourceHtml || '<div style="padding:10px;color:var(--c-ink-muted);font-size:0.85rem;">暂无推荐</div>'}
       </div>
 
-      <div class="ai-section" id="ai-section">
-        <h3>智能深度解读</h3>
-        <p style="font-size:0.85rem;color:var(--c-ink-muted);margin-bottom:16px;line-height:1.6;">基于您的评估数据，运用八步诊断决策树（情绪识别 → 问题识别 → 阶段确认 → 场景确认 → 孩子反应识别 → 归因分析 → 交叉匹配 → 安全红线检查）生成个性化综合分析。</p>
-        <button class="btn-ai" onclick="loadAIDiagnosis()">获取深度解读</button>
-        <div id="ai-content" class="ai-output"></div>
-      </div>
-
       <div style="text-align:center;padding:20px 0 32px;">
         <button class="btn-download" onclick="downloadPDF()">下载 PDF 报告</button>
         <a href="/quiz" style="display:inline-block;padding:14px 24px;color:var(--c-ink-muted);font-size:0.85rem;text-decoration:none;margin-top:8px;">重新评估</a>
+      </div>
+
+      <div class="ai-section" id="ai-section">
+        <h3>智能深度解读</h3>
+        <p style="font-size:0.85rem;color:var(--c-ink-muted);margin-bottom:16px;line-height:1.6;">基于您的评估数据，运用八步诊断决策树（情绪识别 → 问题识别 → 阶段确认 → 场景确认 → 孩子反应识别 → 归因分析 → 交叉匹配 → 安全红线检查）生成个性化综合分析。</p>
+        <button class="btn-ai" onclick="loadAIDiagnosis()">扫码关注获得解读</button>
+        <div id="ai-content" class="ai-output"></div>
+      </div>
+
+      <div class="card" style="text-align:center;padding:28px 20px;">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--c-ink);margin-bottom:8px;">关注公众号 · 获取更多支持</h3>
+        <p style="font-size:0.8rem;color:var(--c-ink-muted);line-height:1.7;margin-bottom:20px;">
+          如需深入交流、专业咨询，或获取 PDF 报告<br>欢迎扫码关注，我们为您提供持续支持
+        </p>
+        <img src="/images/qrcode.jpg" alt="公众号二维码" style="width:160px;height:160px;border-radius:4px;border:1px solid var(--c-border);margin-bottom:16px;">
+        <div style="font-size:0.75rem;color:var(--c-ink-muted);">长按二维码识别关注</div>
       </div>
 
       <div class="footer" style="font-size:0.7rem;color:var(--c-ink-muted);padding:20px 0 40px;line-height:1.8;">
@@ -283,8 +292,27 @@ function downloadPDF() {
   if (reportId) {
     window.open(`/api/report/${reportId}.pdf`, '_blank');
   } else {
-    alert('报告 ID 不存在，请重新生成报告');
+    showWechatModal('PDF 下载提示', '当前报告暂不支持 PDF 下载，请重新完成一次评估后重试。<br><br>如需帮助，欢迎扫码关注公众号联系。');
   }
+}
+
+function showWechatModal(title, message) {
+  const existing = document.getElementById('wechat-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'wechat-modal';
+  modal.innerHTML = `
+    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)document.getElementById('wechat-modal').remove()">
+      <div style="background:#fff;border-radius:8px;max-width:320px;width:100%;padding:24px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+        <div style="font-size:1rem;font-weight:700;color:var(--c-ink);margin-bottom:12px;">${title}</div>
+        <div style="font-size:0.85rem;color:var(--c-ink-light);line-height:1.7;margin-bottom:20px;">${message}</div>
+        <img src="/images/qrcode.jpg" alt="公众号二维码" style="width:140px;height:140px;border-radius:4px;border:1px solid var(--c-border);margin-bottom:16px;">
+        <div style="font-size:0.75rem;color:var(--c-ink-muted);margin-bottom:20px;">长按二维码识别关注</div>
+        <button onclick="document.getElementById('wechat-modal').remove()" style="background:var(--c-ink);color:#fff;border:none;padding:10px 28px;border-radius:4px;font-size:0.85rem;cursor:pointer;">知道了</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 function setRingLevel(score) {
