@@ -16,6 +16,6 @@ services:
       - key: ENABLE_AI_DIAGNOSIS
         value: "true"
       - key: ADMIN_PASSWORD
-        generateValue: true
+        sync: false
       - key: MODEL_API_KEY
         sync: false
