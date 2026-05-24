@@ -28,6 +28,7 @@ async def assess(request: Request, body: AssessRequest):
         has_ai=False,
     )
 
+    report_data["meta"]["report_id"] = report_id
     cache_report(report_id, report_data)
 
     client_host = request.client.host if request.client else None
