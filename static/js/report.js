@@ -245,7 +245,7 @@ function buildReportHTML(r) {
         <p style="font-size:0.8rem;color:var(--c-ink-muted);line-height:1.7;margin-bottom:20px;">
           如需深入交流、专业咨询，或获取 PDF 报告<br>欢迎扫码关注，我们为您提供持续支持
         </p>
-        <img src="/images/qrcode.jpg" alt="公众号二维码" style="width:160px;height:160px;border-radius:4px;border:1px solid var(--c-border);margin-bottom:16px;">
+        <img src="/images/qrcode.jpg" alt="公众号二维码" style="width:160px;height:160px;border-radius:4px;border:1px solid var(--c-border);margin:0 auto 16px;display:block;">
         <div style="font-size:0.75rem;color:var(--c-ink-muted);">长按二维码识别关注</div>
       </div>
 
@@ -272,7 +272,7 @@ async function loadAIDiagnosis() {
     body: JSON.stringify({ report_data: report })
   });
 
-  btn.textContent = '获取深度解读';
+  btn.textContent = '扫码关注获得解读';
   btn.disabled = false;
 
   if (!res.ok) {
@@ -306,7 +306,7 @@ function showWechatModal(title, message) {
       <div style="background:#fff;border-radius:8px;max-width:320px;width:100%;padding:24px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
         <div style="font-size:1rem;font-weight:700;color:var(--c-ink);margin-bottom:12px;">${title}</div>
         <div style="font-size:0.85rem;color:var(--c-ink-light);line-height:1.7;margin-bottom:20px;">${message}</div>
-        <img src="/images/qrcode.jpg" alt="公众号二维码" style="width:140px;height:140px;border-radius:4px;border:1px solid var(--c-border);margin-bottom:16px;">
+        <img src="/images/qrcode.jpg" alt="公众号二维码" style="width:140px;height:140px;border-radius:4px;border:1px solid var(--c-border);margin:0 auto 16px;display:block;">
         <div style="font-size:0.75rem;color:var(--c-ink-muted);margin-bottom:20px;">长按二维码识别关注</div>
         <button onclick="document.getElementById('wechat-modal').remove()" style="background:var(--c-ink);color:#fff;border:none;padding:10px 28px;border-radius:4px;font-size:0.85rem;cursor:pointer;">知道了</button>
       </div>
