@@ -121,6 +121,11 @@ img { max-width: 100%; display: block; }
   gap: 12px;
   margin: 20px 0 32px;
 }
+@media (max-width: 480px) {
+  .dim-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .dim-card {
   background: var(--c-card);
   border-radius: 4px;
