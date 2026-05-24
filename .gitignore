@@ -2,9 +2,10 @@
 .env
 
 # Data
-data/
-*.db
-*.db-journal
+data/*.db
+data/*.db-journal
+# Keep question banks in repo
+!data/题库-*.md
 
 # Python
 __pycache__/
