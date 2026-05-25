@@ -1,10 +1,9 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-import aiosqlite
 
 from app.config import get_settings
-from app.database import INIT_SQL
+from app.database import _get_pool
 
 router = APIRouter()
 settings = get_settings()
@@ -29,50 +28,45 @@ async def admin_stats(password: Optional[str] = None):
     _verify_password(password)
     from datetime import datetime
     today_str = datetime.now().strftime("%Y-%m-%d")
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        db.row_factory = aiosqlite.Row
-
-        total_reports = await db.execute_fetchall("SELECT COUNT(*) FROM reports")
-        total_events = await db.execute_fetchall("SELECT COUNT(*) FROM events")
-        avg_score = await db.execute_fetchall(
-            "SELECT AVG(overall_score) FROM reports"
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        total_reports = await conn.fetchval("SELECT COUNT(*) FROM reports")
+        total_events = await conn.fetchval("SELECT COUNT(*) FROM events")
+        avg_score = await conn.fetchval("SELECT AVG(overall_score) FROM reports")
+        ai_count = await conn.fetchval("SELECT COUNT(*) FROM reports WHERE has_ai = TRUE")
+        today_reports = await conn.fetchval(
+            "SELECT COUNT(*) FROM reports WHERE DATE(created_at) = $1", today_str
         )
-        ai_count = await db.execute_fetchall(
-            "SELECT COUNT(*) FROM reports WHERE has_ai = 1"
-        )
-        today_reports = await db.execute_fetchall(
-            "SELECT COUNT(*) FROM reports WHERE DATE(created_at) = ?", (today_str,)
-        )
-        flag_reports = await db.execute_fetchall(
+        flag_reports = await conn.fetchval(
             "SELECT COUNT(*) FROM reports WHERE flag_count > 0"
         )
-        total_pv = await db.execute_fetchall("SELECT SUM(pv) FROM daily_stats")
-        today_pv = await db.execute_fetchall(
-            "SELECT pv FROM daily_stats WHERE date = ?", (today_str,)
+        total_pv = await conn.fetchval("SELECT COALESCE(SUM(pv), 0) FROM daily_stats")
+        today_pv = await conn.fetchval(
+            "SELECT COALESCE(pv, 0) FROM daily_stats WHERE date = $1", today_str
         )
-        today_complete = await db.execute_fetchall(
-            "SELECT quiz_complete FROM daily_stats WHERE date = ?", (today_str,)
+        today_complete = await conn.fetchval(
+            "SELECT COALESCE(quiz_complete, 0) FROM daily_stats WHERE date = $1", today_str
         )
 
         return {
-            "total_reports": total_reports[0][0] if total_reports else 0,
-            "total_events": total_events[0][0] if total_events else 0,
-            "avg_score": round(avg_score[0][0], 2) if avg_score and avg_score[0][0] else 0,
-            "ai_count": ai_count[0][0] if ai_count else 0,
-            "today_reports": today_reports[0][0] if today_reports else 0,
-            "flag_reports": flag_reports[0][0] if flag_reports else 0,
-            "total_pv": total_pv[0][0] if total_pv and total_pv[0][0] else 0,
-            "today_pv": today_pv[0][0] if today_pv and today_pv[0][0] else 0,
-            "today_complete": today_complete[0][0] if today_complete and today_complete[0][0] else 0,
+            "total_reports": total_reports or 0,
+            "total_events": total_events or 0,
+            "avg_score": round(avg_score, 2) if avg_score else 0,
+            "ai_count": ai_count or 0,
+            "today_reports": today_reports or 0,
+            "flag_reports": flag_reports or 0,
+            "total_pv": total_pv or 0,
+            "today_pv": today_pv or 0,
+            "today_complete": today_complete or 0,
         }
 
 
 @router.get("/api/admin/funnel")
 async def admin_funnel(password: Optional[str] = None):
     _verify_password(password)
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        rows = await db.execute_fetchall(
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
             "SELECT * FROM daily_stats ORDER BY date DESC LIMIT 30"
         )
         return {
@@ -95,13 +89,15 @@ async def admin_funnel(password: Optional[str] = None):
 async def admin_dimensions(password: Optional[str] = None):
     _verify_password(password)
     import json
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        rows = await db.execute_fetchall(
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
             "SELECT dim_scores_json FROM reports ORDER BY created_at DESC LIMIT 100"
         )
         dim_totals = {}
         dim_counts = {}
-        for (dim_json,) in rows:
+        for row in rows:
+            dim_json = row["dim_scores_json"]
             if not dim_json:
                 continue
             try:
@@ -122,9 +118,9 @@ async def admin_dimensions(password: Optional[str] = None):
 @router.get("/api/admin/high-risk")
 async def admin_high_risk(password: Optional[str] = None):
     _verify_password(password)
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        rows = await db.execute_fetchall(
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
             "SELECT * FROM reports WHERE flag_count > 0 ORDER BY created_at DESC LIMIT 50"
         )
         return {
@@ -135,7 +131,7 @@ async def admin_high_risk(password: Optional[str] = None):
                     "overall_score": row["overall_score"],
                     "flag_count": row["flag_count"],
                     "has_ai": bool(row["has_ai"]),
-                    "created_at": row["created_at"],
+                    "created_at": row["created_at"].isoformat() if row["created_at"] else "",
                 }
                 for row in rows
             ]

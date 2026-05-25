@@ -1,27 +1,29 @@
-import aiosqlite
+import asyncpg
+from datetime import datetime
 from app.config import get_settings
 
 settings = get_settings()
+_pool = None
 
 INIT_SQL = """
 CREATE TABLE IF NOT EXISTS events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     event_type TEXT NOT NULL,
     age_band TEXT,
     session_id TEXT,
     ip TEXT,
     ua TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     age_band TEXT,
     overall_score REAL,
     dim_scores_json TEXT,
     flag_count INTEGER,
-    has_ai BOOLEAN DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    has_ai BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS daily_stats (
@@ -40,21 +42,36 @@ CREATE INDEX IF NOT EXISTS idx_reports_date ON reports(created_at);
 """
 
 
+async def _get_pool():
+    global _pool
+    if _pool is None:
+        if not settings.DATABASE_URL:
+            raise RuntimeError("DATABASE_URL is not set")
+        _pool = await asyncpg.create_pool(settings.DATABASE_URL, min_size=1, max_size=10)
+    return _pool
+
+
+async def close_db():
+    global _pool
+    if _pool:
+        await _pool.close()
+        _pool = None
+
+
 async def init_db():
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        await db.executescript(INIT_SQL)
-        await db.commit()
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(INIT_SQL)
 
 
 async def track_event(event_type: str, age_band: str = None, session_id: str = None, ip: str = None, ua: str = None):
-    from datetime import datetime
     today = datetime.now().strftime("%Y-%m-%d")
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        await db.execute(
-            "INSERT INTO events (event_type, age_band, session_id, ip, ua) VALUES (?, ?, ?, ?, ?)",
-            (event_type, age_band, session_id, ip, ua)
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO events (event_type, age_band, session_id, ip, ua) VALUES ($1, $2, $3, $4, $5)",
+            event_type, age_band, session_id, ip, ua
         )
-        # Update daily_stats
         col_map = {
             'page_view': 'pv',
             'quiz_start': 'quiz_start',
@@ -65,18 +82,19 @@ async def track_event(event_type: str, age_band: str = None, session_id: str = N
         }
         col = col_map.get(event_type)
         if col:
-            await db.execute(
-                f"INSERT INTO daily_stats (date, {col}) VALUES (?, 1) ON CONFLICT(date) DO UPDATE SET {col} = {col} + 1",
-                (today,)
+            await conn.execute(
+                f"INSERT INTO daily_stats (date, {col}) VALUES ($1, 1) "
+                f"ON CONFLICT(date) DO UPDATE SET {col} = daily_stats.{col} + 1",
+                today
             )
-        await db.commit()
 
 
 async def save_report(age_band: str, overall_score: float, dim_scores_json: str, flag_count: int, has_ai: bool = False):
-    async with aiosqlite.connect(settings.DATABASE_PATH) as db:
-        cursor = await db.execute(
-            "INSERT INTO reports (age_band, overall_score, dim_scores_json, flag_count, has_ai) VALUES (?, ?, ?, ?, ?)",
-            (age_band, overall_score, dim_scores_json, flag_count, int(has_ai))
+    pool = await _get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO reports (age_band, overall_score, dim_scores_json, flag_count, has_ai) "
+            "VALUES ($1, $2, $3, $4, $5) RETURNING id",
+            age_band, overall_score, dim_scores_json, flag_count, has_ai
         )
-        await db.commit()
-        return cursor.lastrowid
+        return row['id']

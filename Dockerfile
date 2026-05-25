@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libcairo2 \
     libasound2 \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -31,8 +32,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install chromium
 
 COPY . .
-
-RUN mkdir -p /app/data
 
 EXPOSE 8000
 
